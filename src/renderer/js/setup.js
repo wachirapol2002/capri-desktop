@@ -5,6 +5,9 @@
 
 import { fmt } from './util.js';
 
+// her first words with a Thai voice (her own lines aren't in Thai)
+const TEST_TH = 'นี่คือเสียงของฉัน โอเคไหม?';
+
 // the services that take a key, in the order she offers them (the first two have a free tier)
 const KEYED = ['groq', 'gemini', 'openrouter', 'openai', 'mistral', 'deepseek'];
 const NAMES = { groq: 'Groq', gemini: 'Gemini', openrouter: 'OpenRouter', openai: 'OpenAI', mistral: 'Mistral', deepseek: 'DeepSeek' };
@@ -46,6 +49,75 @@ export class Setup {
       else ready = await this.pickKeyed();
     });
     if (ready) this.onReady?.();
+  }
+
+  // "Set her voice" in her menu (or a voice just picked there): what that voice needs (the address
+  // of your speech server, a key, which voice), then she says something with it, or why she can't.
+  async voiceSettings() {
+    await this.guide.scene(async () => {
+      const cfg = await this.host.getConfig();
+      const provider = cfg.speech?.provider || 'off';
+      if (provider === 'off') return;
+      const t = this.t.voice;
+      const settings = { provider };
+      if (provider === 'edge') {
+        // Edge's voices go through edge-tts (Python): installed with a click if it isn't there
+        const state = await this.host.edgeVoiceState();
+        if (state === 'no-python') {
+          const id = await this.guide.ask({
+            face: 'wide', line: t.edgePython, quote: t.edgePythonHow,
+            actions: [{ id: 'page', label: t.edgePythonSite, primary: true }, { id: 'ok', label: this.t.later }],
+          });
+          if (id === 'page') this.host.keyPage('python');
+          return;
+        }
+        if (state === 'missing') {
+          const go = await this.guide.ask({
+            face: 'look', line: t.edgeInstall, quote: t.edgeInstallHow,
+            actions: [{ id: 'yes', label: this.t.installBtn, primary: true }, { id: 'no', label: this.t.later }],
+          });
+          if (go !== 'yes') return;
+          this.panel.say({ kind: 'info', face: 'look', line: t.edgeInstalling, hold: 180000 });
+          const done = await this.host.installEdgeVoices();
+          if (!done) {
+            await this.guide.ask({ face: 'wide', line: t.edgeFailed, actions: [{ id: 'ok', label: 'OK', primary: true }] });
+            return;
+          }
+        }
+      } else if (provider !== 'windows' && provider !== 'google') {
+        if (provider === 'local') {
+          const got = await this.guide.askText({ face: 'look', line: t.url, quote: t.urlHow, placeholder: 'http://127.0.0.1:8880/v1', tag: 'URL' });
+          if (!got) return;
+          settings.url = got.text || '';
+        } else if (!cfg.keys?.includes(provider)) {
+          const got = await this.guide.askText({
+            face: 'look', line: fmt(t.key, { name: provider === 'openai' ? 'OpenAI' : 'ElevenLabs' }), secret: true, tag: 'KEY', note: t.keyNote,
+            actions: [{ id: 'page', label: this.t.where }], onAction: (id) => id === 'page' && (this.host.keyPage(provider), true),
+          });
+          if (!got?.text) return;
+          settings.key = got.text;
+        }
+        const got = await this.guide.askText({
+          face: 'look', line: t.name, quote: t.nameHow[provider], tag: 'VOICE',
+          placeholder: provider === 'local' ? 'af_bella' : provider === 'openai' ? 'shimmer' : 'voice ID',
+          actions: provider === 'elevenlabs' ? [{ id: 'design', label: t.design }] : [],
+          onAction: (id) => id === 'design' && (this.host.keyPage('voicedesign'), true),
+        });
+        if (!got) return;
+        settings.voice = got.text || '';
+        await this.host.setVoice(settings);
+      }
+      // her first words with it, in a language it reads: asked once here (then it's in the cache for the panel)
+      const test = cfg.speech?.lang === 'th' && provider !== 'local' && provider !== 'openai' && provider !== 'elevenlabs' ? TEST_TH : t.test;
+      const res = await this.host.speak(test);
+      if (res?.error) {
+        const error = res.error === 'no edge-tts' ? t.edgeInstall : res.error;
+        await this.guide.ask({ face: 'wide', line: fmt(t.failed, { error }), actions: [{ id: 'ok', label: 'OK', primary: true }] });
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 250)); // her new settings reach her voice first
+      this.panel.say({ kind: 'done', face: 'smug', line: test, hold: 4000 });
+    });
   }
 
   // A bigger model than the tiny one her chat is on: picked, fetched, and her chat back on it.

@@ -17,6 +17,7 @@ const { startWindowWatch } = require('./windows');
 const llm = require('./llm');
 const ollama = require('./ollama');
 const setup = require('./setup');
+const speech = require('./speech');
 const apps = require('./apps');
 const system = require('./system');
 const launch = require('./launch');
@@ -297,6 +298,54 @@ function updateConfig(patch) {
   return cfg;
 }
 
+// Windows' voices, asked for once (PowerShell takes a second): her menu lists them once they're in
+let windowsVoiceList = [];
+function loadWindowsVoices() {
+  speech.windowsVoices().then((list) => {
+    windowsVoiceList = list;
+    if (list.length) rebuildTray();
+  });
+}
+
+// Her menu › Her voice: each voice to pick straight away, how fast she speaks, and the services
+// that need setting up (an address, a key)
+function speechMenu(cfg, t) {
+  const now = cfg.speech || {};
+  const provider = now.provider || 'off';
+  // `lang`: the voice's language, so her first words with it are in one it reads
+  const pick = (next, voice, lang) => {
+    updateConfig({ speech: { ...now, provider: next, voice, lang } });
+    if (next !== 'off') sendCommand('setupVoice'); // what it needs, then a word in it
+  };
+  const item = (label, next, voice = '', lang = '') => ({
+    label, type: 'radio',
+    checked: provider === next && (voice === '' || (now.voice || speech.SERVICES[next]?.voice) === voice),
+    click: () => pick(next, voice, lang),
+  });
+  const gender = (g) => (g === 'f' ? t.speechFemale : t.speechMale);
+  const rate = Number(now.rate) || 1;
+  return [
+    item(t.speechOff, 'off'),
+    { type: 'separator' },
+    item('Google Translate (ไทย)', 'google', '', 'th'),
+    ...speech.EDGE_VOICES.map((v) => item(`Edge · ${v.label} (${v.lang === 'th' ? 'ไทย' : 'multi'}, ${gender(v.gender)})`, 'edge', v.id, v.lang)),
+    ...windowsVoiceList.map((v) => item(`Windows · ${v.name.replace(/^Microsoft\s+/, '')} (${v.lang})`, 'windows', v.name, v.lang.slice(0, 2).toLowerCase())),
+    { type: 'separator' },
+    item(t.speechLocal, 'local'),
+    item('OpenAI', 'openai'),
+    item('ElevenLabs', 'elevenlabs'),
+    { type: 'separator' },
+    {
+      label: t.speechRate,
+      submenu: speech.RATES.map((r) => ({
+        label: `×${r}`, type: 'radio', checked: Math.abs(rate - r) < 0.01,
+        click: () => updateConfig({ speech: { ...now, rate: r } }),
+      })),
+    },
+    { label: t.speechSet, enabled: provider !== 'off', click: () => sendCommand('setupVoice') },
+  ];
+}
+
 function rebuildTray() {
   if (!tray) return;
   const cfg = config.load();
@@ -361,6 +410,10 @@ function rebuildTray() {
           },
         },
       ],
+    },
+    {
+      label: t.speech,
+      submenu: speechMenu(cfg, t),
     },
     {
       label: t.screen,
@@ -683,6 +736,7 @@ function createTray() {
   tray.setToolTip('Capri');
   tray.on('click', () => sendCommand('status'));
   rebuildTray();
+  loadWindowsVoices();
 }
 
 function registerIpc() {
@@ -770,6 +824,29 @@ function registerIpc() {
     }
   });
   ipcMain.handle('look:say', (_e, request) => sayAboutSnap(request || {}));
+  // her voice from a service (speech.js): the audio, or why not
+  ipcMain.handle('speech:say', async (_e, text) => {
+    const cfg = config.load();
+    const voice = cfg.speech || {};
+    try {
+      const key = setup.openKeys(cfg.apiKeys)[voice.provider] || '';
+      return { audio: await speech.synthesize(String(text || ''), voice, key, resolveLang(cfg.lang)), rate: speech.stretch(voice) };
+    } catch (err) {
+      return { error: err.message };
+    }
+  });
+  // Edge's voices need edge-tts (Python): whether it's there, and installing it
+  ipcMain.handle('speech:edge', () => speech.edgeState());
+  ipcMain.handle('speech:edgeInstall', () => speech.installEdge());
+  // its settings, from her panel (setup.js "Set her voice"): a key sealed like her chat's
+  ipcMain.handle('speech:set', (_e, { provider, voice, url, key }) => {
+    if (provider !== 'off' && provider !== 'windows' && !speech.SERVICES[provider]) return false;
+    const cfg = config.load();
+    const patch = { speech: { ...cfg.speech, provider, ...(voice !== undefined && { voice: String(voice).trim().slice(0, 120) }), ...(url !== undefined && { url: String(url).trim().slice(0, 300) }) } };
+    if (key) patch.apiKeys = { ...cfg.apiKeys, [provider]: setup.sealKey(String(key).trim()) };
+    updateConfig(patch);
+    return true;
+  });
   // how hard the processor works, in %, since the last time she asked (pc.js)
   let cpuBefore = null;
   ipcMain.handle('pc:cpu', () => {

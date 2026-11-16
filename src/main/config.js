@@ -39,6 +39,11 @@ const DEFAULTS = {
   bond: null,        // how close she is to you: { xp, first, last, days, streak, caps } (bond.js)
   pcReact: true,     // she reacts to your PC: the processor at full tilt, the battery, the network, a USB stick, a game (pc.js)
   watchScreen: false, // she looks at your screen now and then and says something about it (look.js)
+  // her voice: 'off', 'edge' (Microsoft Edge's online voices), 'google' (Google Translate's),
+  // 'windows' (its own voices), 'local' (a speech server on your PC), 'openai' or 'elevenlabs'
+  // (their keys in apiKeys); `voice` its name or ID there, `lang` that voice's language, `url` the
+  // local server's, `rate` how fast (0.5 to 2)
+  speech: { provider: 'off', voice: '', lang: '', url: '', rate: 1 },
   lookAsked: false,  // she told you what looking means (where the picture goes) and you said yes
   breaks: true,      // after two hours at your PC without a real break, she tells you to take one (breaks.js)
   setups: {},        // your setups, by name: the apps you had open and where (setups.js)
