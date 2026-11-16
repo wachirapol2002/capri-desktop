@@ -103,7 +103,7 @@ export class Panel {
   // chat: a line to type to her, { placeholder, send, close, noteTag, note, secret }; onSend(text)
   //       gets what you typed (secret: hidden as you type, a key)
   // progress: a bar under the line, 0..1 (a download)
-  // onLeave: () => void, when this message goes (closed, timed out or replaced)
+  // onLeave: (why) => void, when this message goes (closed, timed out, or replaced: why 'replaced')
   say(msg) {
     const cur = this.current;
     // don't step on something more important that just appeared (one step of her guide follows another)
@@ -122,7 +122,7 @@ export class Panel {
       return false;
     }
     if (cur && this.visible) this.onDismiss?.(cur);
-    cur?.onLeave?.();
+    cur?.onLeave?.('replaced');
     this.current = { ...msg, at: performance.now() };
     clearTimeout(this.hideTimer);
 

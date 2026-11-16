@@ -18,6 +18,8 @@ const llm = require('./llm');
 const ollama = require('./ollama');
 const setup = require('./setup');
 const speech = require('./speech');
+const live = require('./live');
+const claudewin = require('./claudewin');
 const apps = require('./apps');
 const system = require('./system');
 const launch = require('./launch');
@@ -430,6 +432,27 @@ function rebuildTray() {
       ],
     },
     {
+      // talking out loud with her (Gemini Live), and what you ask of Claude Code that way
+      label: t.live,
+      submenu: [
+        { label: t.liveStart, click: () => sendCommand('liveStart') },
+        { label: t.liveOn, type: 'checkbox', checked: Boolean(cfg.live?.on), click: (item) => updateConfig({ live: { ...cfg.live, on: item.checked } }) },
+        { type: 'separator' },
+        {
+          label: t.liveVoice,
+          submenu: live.VOICES.map((name, i) => ({
+            label: name, type: 'radio', checked: (cfg.live?.voice || live.VOICES[0]) === name || (!live.VOICES.includes(cfg.live?.voice) && i === 0),
+            click: () => {
+              updateConfig({ live: { ...cfg.live, voice: name } });
+              liveSession?.revoice(name); // talking right now: in that voice straight away
+            },
+          })),
+        },
+        { label: `Claude Code: ${liveFolder()}`, click: pickClaudeFolder },
+        { label: t.liveKey, click: () => sendCommand('liveKey') },
+      ],
+    },
+    {
       label: t.chatModel,
       submenu: [
         { label: t.aiSetup, click: () => sendCommand('setupChat') },
@@ -722,6 +745,11 @@ function llmConfig(cfg = config.load()) {
   return { ...cfg, apiKeys: setup.openKeys(cfg.apiKeys) };
 }
 
+// Talking out loud (live.js): the session on now, and the folder Claude Code works in for it
+let liveSession = null;
+let lastClaudeCwd = readMemory().lastClaudeCwd || null;
+const liveFolder = () => config.load().claudeCwd || lastClaudeCwd || app.getPath('home');
+
 async function pickClaudeFolder() {
   const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openDirectory'], defaultPath: config.load().claudeCwd || app.getPath('home') });
   if (canceled || !filePaths[0]) return;
@@ -835,6 +863,46 @@ function registerIpc() {
       return { error: err.message };
     }
   });
+  // talking out loud (live.js): a session with her persona and her tools, then audio both ways
+  ipcMain.handle('live:start', async (_e, { system, tools }) => {
+    liveSession?.close();
+    liveSession = null;
+    const cfg = config.load(true);
+    const key = setup.openKeys(cfg.apiKeys).gemini;
+    if (!key) return { ok: false, error: 'no key' };
+    const session = new live.LiveSession({
+      key, voice: cfg.live?.voice, system: String(system || ''), tools: Array.isArray(tools) ? tools : [],
+      send: (evt) => {
+        if (evt.type === 'state' && evt.state === 'closed' && liveSession === session) liveSession = null;
+        overlay?.webContents.send('live:event', evt);
+      },
+    });
+    liveSession = session;
+    try {
+      return { ok: true, model: await session.open() };
+    } catch (err) {
+      if (liveSession === session) liveSession = null;
+      return { ok: false, error: err.message };
+    }
+  });
+  ipcMain.on('live:audio', (_e, data) => typeof data === 'string' && liveSession?.audio(data));
+  ipcMain.on('live:audioEnd', () => liveSession?.audioEnd());
+  ipcMain.on('live:text', (_e, text) => typeof text === 'string' && liveSession?.text(text));
+  ipcMain.on('live:tool', (_e, responses) => Array.isArray(responses) && liveSession?.toolResponse(responses));
+  ipcMain.on('live:stop', () => {
+    liveSession?.close();
+    liveSession = null;
+  });
+  // the Gemini key, from her panel: sealed like her chat's (the same one, if Gemini is her chat too)
+  ipcMain.handle('live:key', (_e, key) => {
+    const text = String(key || '').trim();
+    if (!text) return false;
+    updateConfig({ apiKeys: { ...config.load().apiKeys, gemini: setup.sealKey(text) } });
+    return true;
+  });
+  ipcMain.handle('live:hasKey', () => Boolean(setup.openKeys(config.load(true).apiKeys).gemini));
+  // what you asked out loud, to Claude Code in a window of its own (claudewin.js)
+  ipcMain.handle('claude:window', (_e, task) => claudewin.run(String(task || ''), liveFolder()));
   // Edge's voices need edge-tts (Python): whether it's there, and installing it
   ipcMain.handle('speech:edge', () => speech.edgeState());
   ipcMain.handle('speech:edgeInstall', () => speech.installEdge());
@@ -1142,10 +1210,20 @@ function main() {
     createBridge({
       port: PORT,
       // her own Claude Code chat's hooks would cover its answer with theirs
-      onEvent: (evt) => !llm.isChatSession(evt.session_id) && overlay?.webContents.send('claude:event', evt),
+      onEvent: (evt) => {
+        if (llm.isChatSession(evt.session_id)) return;
+        // where you last worked with Claude Code (kept for next time: her live talks send work there)
+        if (evt.cwd && !String(evt.session_id || '').includes(':') && evt.cwd !== lastClaudeCwd && !claudewin.isSession(evt.session_id)) {
+          lastClaudeCwd = evt.cwd;
+          saveMemory({ lastClaudeCwd });
+          rebuildTray();
+        }
+        overlay?.webContents.send('claude:event', evt);
+      },
       onDebug: DEV ? debugHandler : null,
     });
     globalShortcut.register('Control+Alt+C', () => toggleVisible());
+    globalShortcut.register('Control+Alt+V', () => sendCommand('liveToggle')); // talking out loud with her, on or off
     llm.restoreClaude(readMemory().claude);
     refreshModels(); // for her menu's model list
     setTimeout(() => launch.launchables().catch(() => {}), 20000); // what she can open, before you ask

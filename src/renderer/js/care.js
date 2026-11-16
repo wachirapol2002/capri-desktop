@@ -13,25 +13,25 @@ const WAIT_LINE_MS = 1500;
 
 // --- What you ask, in her five languages -------------------------------------------------------
 
-const PC = /(?<![\p{L}])(?:pc|ordi\p{L}*|computer|ordenador|computador|компьютер\p{L}*|пк)(?![\p{L}])/iu;
-const LOAD = /processeur|\bcpu\b|\bram\b|m[ée]moire|memory|memoria|mem[óo]ria|процессор|памят/i;
-const SLOW = /(?<![\p{L}])(?:rame|ramer|lag\p{L}*|lent|lente|ralenti\p{L}*|slow\p{L}*|lento|lenta|trava\p{L}*|тормоз\p{L}*|медленн\p{L}*|лага\p{L}*)(?![\p{L}])|what(?:'s| is) (?:using|eating|hogging|slowing)|qu['’]est[- ]ce qui (?:consomme|bouffe|prend|mange|utilise|ralentit)|qu[eé] (?:consume|est[aá] usando|ralentiza)|o que (?:est[aá] )?(?:consumindo|usando|deixando)|что (?:ест|жр[её]т|грузит|тормозит)/iu;
+const PC = /(?<![\p{L}])(?:pc|ordi\p{L}*|computer|ordenador|computador|компьютер\p{L}*|пк)(?![\p{L}])|คอม|เครื่อง/iu;
+const LOAD = /processeur|\bcpu\b|\bram\b|m[ée]moire|memory|memoria|mem[óo]ria|процессор|памят|ซีพียู|แรม/i;
+const SLOW = /(?<![\p{L}])(?:rame|ramer|lag\p{L}*|lent|lente|ralenti\p{L}*|slow\p{L}*|lento|lenta|trava\p{L}*|тормоз\p{L}*|медленн\p{L}*|лага\p{L}*)(?![\p{L}])|what(?:'s| is) (?:using|eating|hogging|slowing)|qu['’]est[- ]ce qui (?:consomme|bouffe|prend|mange|utilise|ralentit)|qu[eé] (?:consume|est[aá] usando|ralentiza)|o que (?:est[aá] )?(?:consumindo|usando|deixando)|что (?:ест|жр[её]т|грузит|тормозит)|เครื่องช้า|คอมช้า|เครื่องค้าง|คอมค้าง|อะไรกินเครื่อง|อะไรกินแรม|อะไรกินซีพียู/iu;
 
-const SPACE = /fais(?:[- ]moi)? de la place|lib[eè]re(?:r)? (?:de )?(?:l['’]espace|la place|de la place|du stockage|de l['’]espace)|nettoie (?:mon |le |l['’])?(?:pc|ordi\p{L}*|disque)|vide (?:la |ma )?corbeille|(?:vide|supprime) (?:mes |les )?fichiers temporaires|free (?:up )?(?:some )?(?:disk )?space|clean (?:up )?(?:my |the )?(?:pc|computer|disk|drive)|empty (?:my |the )?(?:recycle )?bin|libera (?:espacio|espa[çc]o)|limpia (?:mi |el )?(?:pc|ordenador|disco)|vac[ií]a (?:la )?papelera|limpa (?:meu |o )?(?:pc|computador|disco)|esvazi[ae] a lixeira|освободи место|почисти (?:компьютер|пк|диск)|очисти (?:корзину|диск|компьютер|пк)/iu;
+const SPACE = /fais(?:[- ]moi)? de la place|lib[eè]re(?:r)? (?:de )?(?:l['’]espace|la place|de la place|du stockage|de l['’]espace)|nettoie (?:mon |le |l['’])?(?:pc|ordi\p{L}*|disque)|vide (?:la |ma )?corbeille|(?:vide|supprime) (?:mes |les )?fichiers temporaires|free (?:up )?(?:some )?(?:disk )?space|clean (?:up )?(?:my |the )?(?:pc|computer|disk|drive)|empty (?:my |the )?(?:recycle )?bin|libera (?:espacio|espa[çc]o)|limpia (?:mi |el )?(?:pc|ordenador|disco)|vac[ií]a (?:la )?papelera|limpa (?:meu |o )?(?:pc|computador|disco)|esvazi[ae] a lixeira|освободи место|почисти (?:компьютер|пк|диск)|очисти (?:корзину|диск|компьютер|пк)|เคลียร์พื้นที่|ล้างพื้นที่|เพิ่มพื้นที่|ล้างถังขยะ|เทถังขยะ|ลบไฟล์ขยะ|ลบไฟล์ชั่วคราว|ล้างเครื่อง/iu;
 
-const STARTUP = /d[ée]marrage|lancement de windows|startup|start(?:s|ing)? with windows|boot|inicio de windows|al (?:arrancar|iniciar)(?: windows)?|arranque|inicializa[çc][ãa]o|autostart|автозагруз\p{L}*|при запуске/iu;
-const DISABLE = /(?<![\p{L}])(?:d[ée]sactive|enl[eè]ve|retire|supprime|vire|disable|remove|stop|turn off|desactiva|quita|elimina|desativa|tira|убери|отключи)(?![\p{L}])/iu;
-const ENABLE = /(?<![\p{L}])(?:r[ée]active|remets|rajoute|enable|re-?enable|turn on|activa|reactiva|ativa|reativa|включи|верни)(?![\p{L}])/iu;
+const STARTUP = /d[ée]marrage|lancement de windows|startup|start(?:s|ing)? with windows|boot|inicio de windows|al (?:arrancar|iniciar)(?: windows)?|arranque|inicializa[çc][ãa]o|autostart|автозагруз\p{L}*|при запуске|เปิดพร้อม ?windows|เปิดพร้อมวินโดว์|ตอนเปิดเครื่อง|สตาร์ทอัพ/iu;
+const DISABLE = /(?<![\p{L}])(?:d[ée]sactive|enl[eè]ve|retire|supprime|vire|disable|remove|stop|turn off|desactiva|quita|elimina|desativa|tira|убери|отключи)(?![\p{L}])|เอาออก|(?<!เ)ปิด/iu;
+const ENABLE = /(?<![\p{L}])(?:r[ée]active|remets|rajoute|enable|re-?enable|turn on|activa|reactiva|ativa|reativa|включи|верни)(?![\p{L}])|เอากลับ|เปิด/iu;
 
-const UPDATES = /(?:mets?|mettre) (?:[àa] jour|a jour) (?:mes |les |toutes (?:mes|les) )?(?:applis?|applications|logiciels|programmes|apps)|mises? [àa] jour (?:de |des )?(?:mes )?(?:applis?|applications|logiciels|programmes)|update (?:all )?(?:my |the |all )?(?:apps|applications|programs|software)|actualiza (?:mis |las |todas )?(?:aplicaciones|apps|programas)|atualiz[ae] (?:meus |os |todos )?(?:aplicativos|apps|programas)|обнови (?:все )?(?:приложения|программы)/iu;
+const UPDATES = /(?:mets?|mettre) (?:[àa] jour|a jour) (?:mes |les |toutes (?:mes|les) )?(?:applis?|applications|logiciels|programmes|apps)|mises? [àa] jour (?:de |des )?(?:mes )?(?:applis?|applications|logiciels|programmes)|update (?:all )?(?:my |the |all )?(?:apps|applications|programs|software)|actualiza (?:mis |las |todas )?(?:aplicaciones|apps|programas)|atualiz[ae] (?:meus |os |todos )?(?:aplicativos|apps|programas)|обнови (?:все )?(?:приложения|программы)|อัปเดตแอป|อัพเดทแอป|อัพเดตแอป|อัปเดตโปรแกรม|อัพเดทโปรแกรม|อัปเดตทุกอย่าง/iu;
 
-const DUPLICATES = /doublons?|en double|duplicate|duplicad|repetid|дубл/i;
+const DUPLICATES = /doublons?|en double|duplicate|duplicad|repetid|дубл|ไฟล์ซ้ำ|ซ้ำกัน/i;
 const PLACES = [
-  ['videos', /vid[ée]os?|v[ií]deos?|видео/i],
-  ['downloads', /t[ée]l[ée]chargements?|downloads?|descargas?|загрузк/i],
-  ['documents', /documents?|documentos?|документ/i],
-  ['desktop', /\bbureau\b|desktop|escritorio|[áa]rea de trabalho|рабоч\p{L}* стол/iu],
-  ['pictures', /photos?|images?|pictures?|fotos?|im[áa]gen(?:es)?|imagens|фото|картинк/i],
+  ['videos', /vid[ée]os?|v[ií]deos?|видео|วิดีโอ/i],
+  ['downloads', /t[ée]l[ée]chargements?|downloads?|descargas?|загрузк|ดาวน์โหลด/i],
+  ['documents', /documents?|documentos?|документ|เอกสาร/i],
+  ['desktop', /\bbureau\b|desktop|escritorio|[áa]rea de trabalho|рабоч\p{L}* стол|เดสก์ท็อป|หน้าจอหลัก/iu],
+  ['pictures', /photos?|images?|pictures?|fotos?|im[áa]gen(?:es)?|imagens|фото|картинк|รูปภาพ|รูป/i],
 ];
 
 const SOUND = /(?<![\p{L}])(?:sound|audio|sonido|[áa]udio|звук)(?![\p{L}])|(?<![\p{L}])(?:le|du|au|el|o) (?:son|som)(?![\p{L}])/iu;
@@ -51,37 +51,37 @@ const DEVICE_KIND = {
 // Windows' virtual outputs (Steam's, VB-Audio's...): only picked when you name them
 const VIRTUAL = /steam streaming|vb-audio|\bcable\b|virtual|voicemeeter|nvidia broadcast|sonar/i;
 
-const MIC = /(?<![\p{L}])(?:micro|mic|microphone|micr[oó]fono|microfone|микрофон\p{L}*)(?![\p{L}])/iu;
-const OFF = /(?<![\p{L}])(?:coupe|d[ée]sactive|[ée]teins|turn off|switch off|disable|silencia|desactiva|apaga|desativa|desliga|выключи|отключи|заглуши)(?![\p{L}])|(?<!un)mute|(?<!des)muta/iu;
-const ON = /(?<![\p{L}])(?:remets|rallume|r[ée]active|active|allume|turn on|switch on|enable|activa|reactiva|enciende|ativa|reativa|liga|включи)(?![\p{L}])|unmute|desmuta/iu;
+const MIC = /(?<![\p{L}])(?:micro|mic|microphone|micr[oó]fono|microfone|микрофон\p{L}*)(?![\p{L}])|ไมค์|ไมโครโฟน/iu;
+const OFF = /(?<![\p{L}])(?:coupe|d[ée]sactive|[ée]teins|turn off|switch off|disable|silencia|desactiva|apaga|desativa|desliga|выключи|отключи|заглуши)(?![\p{L}])|(?<!un)mute|(?<!des)muta|(?<!เ)ปิด/iu;
+const ON = /(?<![\p{L}])(?:remets|rallume|r[ée]active|active|allume|turn on|switch on|enable|activa|reactiva|enciende|ativa|reativa|liga|включи)(?![\p{L}])|unmute|desmuta|เปิด/iu;
 
-const RADIOS = [['wifi', /wi-?fi|wlan|вай-?фай/i], ['bluetooth', /bluetooth|блютуз/i]];
+const RADIOS = [['wifi', /wi-?fi|wlan|вай-?фай|ไวไฟ/i], ['bluetooth', /bluetooth|блютуз|บลูทูธ/i]];
 const SETTINGS_WORD = /param[eè]tres?|r[ée]glages?|settings|configuraci[oó]n|configura[çc][õo]es|ajustes|настройк/i;
 
-const EJECT = /[ée]jecte|eject|expulsa|ejet[ae]|извлеки/i;
+const EJECT = /[ée]jecte|eject|expulsa|ejet[ae]|извлеки|ถอดแฟลช|ถอด ?usb|เอาแฟลชออก|ดีดแฟลช/i;
 const LETTER = /(?<![\p{L}])([d-z])\s*:/iu;
 
-const BRIGHT = /luminosit[ée]|brightness|brillo|brilho|яркост\p{L}*/iu;
-const DOWN = /baisse|diminue|r[ée]duis|moins|\bdown\b|lower|\bdim\b|decrease|baja|reduce|menos|diminui|abaixa|уменьши|понизь|убавь/i;
-const UP = /monte|augmente|\bplus\b|\bup\b|raise|increase|sube|aumenta|m[áa]s\b|mais\b|увеличь|повысь|прибавь/i;
+const BRIGHT = /luminosit[ée]|brightness|brillo|brilho|яркост\p{L}*|ความสว่าง|แสงหน้าจอ/iu;
+const DOWN = /baisse|diminue|r[ée]duis|moins|\bdown\b|lower|\bdim\b|decrease|baja|reduce|menos|diminui|abaixa|уменьши|понизь|убавь|ลด|ลง|มืดลง/i;
+const UP = /monte|augmente|\bplus\b|\bup\b|raise|increase|sube|aumenta|m[áa]s\b|mais\b|увеличь|повысь|прибавь|เพิ่ม|ขึ้น|สว่างขึ้น/i;
 
 const CLIP = /^(?:capri,?\s+)?clip(?:pe|per)?(?:[- ](?:ça|ca|that|it|this|eso|isso|это))?\s*[.!?]*$|clip(?:pe|per)? (?:les|the|los|os) (?:\d+ )?(?:derni[eè]res?|last|[uú]ltim[oa]s)|fais (?:un )?clip|make a clip|haz un clip|faz um clip|сделай клип|enregistre ce qui (?:vient de se passer|s['’]est pass[ée])|record (?:that|what (?:just )?happened)|graba (?:lo que (?:acaba de pasar|pas[oó])|eso)|grava (?:o que aconteceu|isso)|запиши (?:что было|последние)/iu;
-const RECORD = /enregistre (?:mon |l['’])?[ée]cran|lance l['’]enregistrement|record (?:my |the )?screen|screen ?record|start recording|graba (?:mi |la )?pantalla|grava (?:minha |a )?tela|запиши экран|начни запись|(?:arr[êe]te|stop|det[eé]n|para|pare) (?:l['’]|la |a |the )?(?:enregistrement|recording|grabaci[oó]n|grava[çc][ãa]o)|останови запись/iu;
+const RECORD = /enregistre (?:mon |l['’])?[ée]cran|lance l['’]enregistrement|record (?:my |the )?screen|screen ?record|start recording|graba (?:mi |la )?pantalla|grava (?:minha |a )?tela|запиши экран|начни запись|(?:arr[êe]te|stop|det[eé]n|para|pare) (?:l['’]|la |a |the )?(?:enregistrement|recording|grabaci[oó]n|grava[çc][ãa]o)|останови запись|อัดหน้าจอ|อัดจอ|หยุดอัด/iu;
 
-const LOST = /perdu (?:ma|une|la|mes) fen[êe]tres?|fen[êe]tres? (?:perdues?|disparues?|hors (?:de l['’])?[ée]cran|introuvables?)|ram[eè]ne (?:mes |les |ma |la )?fen[êe]tres?|lost (?:a |my |the )?windows?|windows? (?:is |are )?off ?screen|bring (?:my |the )?windows? back|perd[ií] (?:una |la |mi |mis )?ventanas?|ventanas? (?:perdidas?|fuera de la pantalla)|perdi (?:uma |a |minha |minhas )?janelas?|janelas? (?:perdidas?|fora da tela)|потерял\p{L}* окн\p{L}*|окн\p{L}* за экраном|верни окн\p{L}*/iu;
+const LOST = /perdu (?:ma|une|la|mes) fen[êe]tres?|fen[êe]tres? (?:perdues?|disparues?|hors (?:de l['’])?[ée]cran|introuvables?)|ram[eè]ne (?:mes |les |ma |la )?fen[êe]tres?|lost (?:a |my |the )?windows?|windows? (?:is |are )?off ?screen|bring (?:my |the )?windows? back|perd[ií] (?:una |la |mi |mis )?ventanas?|ventanas? (?:perdidas?|fuera de la pantalla)|perdi (?:uma |a |minha |minhas )?janelas?|janelas? (?:perdidas?|fora da tela)|потерял\p{L}* окн\p{L}*|окн\p{L}* за экраном|верни окн\p{L}*|หน้าต่างหาย|หน้าต่างหลุดจอ|หน้าต่างหลุด|ดึงหน้าต่างกลับ/iu;
 const OTHER_SCREEN = /\s*(?:sur|vers|to|on|onto|en|a|para|no|na|на)\s+(?:l['’]autre|the other|my other|el otro|la otra|o outro|a outra|другой|второй)\s+(?:[ée]cran|screen|monitor|pantalla|tela|экран|монитор)|\s*(?:sur|on|to|en|na|no|на)\s+(?:l['’]|the |la |a |o )?(?:[ée]cran|screen|monitor|pantalla|tela|экран|монитор)\s*(\d)/iu;
 const MOVE = /^\s*(?:mets?|bouge|d[ée]place|envoie|passe|put|move|send|pon|mueve|manda|coloca|move|bota|manda|поставь|перемести|отправь)\s+/iu;
 
-const SETUP = /set-?up|espace de travail|workspace|espacio de trabajo|espa[çc]o de trabalho|сетап|рабочее пространство/iu;
-const SETUP_SAVE = /(?<![\p{L}])(?:retiens|m[ée]morise|sauvegarde|enregistre|garde|save|remember|memorize|keep|guarda|recuerda|memoriza|salva|grava|lembra|запомни|сохрани)(?![\p{L}])/iu;
-const SETUP_OPEN = /(?<![\p{L}])(?:lance|ouvre|d[ée]marre|charge|remets|restaure|launch|open|start|load|restore|lanza|abre|inicia|carga|restaura|carrega|запусти|открой|загрузи|верни)(?![\p{L}])/iu;
+const SETUP = /set-?up|espace de travail|workspace|espacio de trabajo|espa[çc]o de trabalho|сетап|рабочее пространство|เซ็ตอัป|เซ็ตอัพ|เซตอัป/iu;
+const SETUP_SAVE = /(?<![\p{L}])(?:retiens|m[ée]morise|sauvegarde|enregistre|garde|save|remember|memorize|keep|guarda|recuerda|memoriza|salva|grava|lembra|запомни|сохрани)(?![\p{L}])|จำ|บันทึก|เซฟ/iu;
+const SETUP_OPEN = /(?<![\p{L}])(?:lance|ouvre|d[ée]marre|charge|remets|restaure|launch|open|start|load|restore|lanza|abre|inicia|carga|restaura|carrega|запусти|открой|загрузи|верни)(?![\p{L}])|เปิด|โหลด/iu;
 const SETUP_LIST = /(?:mes|quels|my|which|what|mis|cu[aá]les|meus|quais|мои|какие)\s+(?:sont mes\s+)?(?:set-?ups|сетапы)/iu;
 
-const GAME = /mode (?:jeu|gaming|gamer)|(?:game|gaming) mode|modo (?:juego|gamer|gaming|jogo)|игров\p{L}* режим|режим игры/iu;
-const GAME_OFF = /(?:fin|arr[êe]te|quitte|d[ée]sactive|sors|coupe) (?:du |le |de )?mode (?:jeu|gaming|gamer)|(?:end|stop|exit|quit|turn off|disable) (?:the )?(?:game|gaming) mode|(?:game|gaming) mode off|(?:fin|termina|sal|desactiva|apaga) (?:del |el )?modo (?:juego|gamer|gaming)|(?:fim|sai|desativa|desliga) (?:do |o )?modo (?:jogo|gamer|gaming)|(?:выключи|выйди из|заверши|отключи) игров/iu;
+const GAME = /mode (?:jeu|gaming|gamer)|(?:game|gaming) mode|modo (?:juego|gamer|gaming|jogo)|игров\p{L}* режим|режим игры|โหมดเกม|โหมดเล่นเกม/iu;
+const GAME_OFF = /(?:fin|arr[êe]te|quitte|d[ée]sactive|sors|coupe) (?:du |le |de )?mode (?:jeu|gaming|gamer)|(?:end|stop|exit|quit|turn off|disable) (?:the )?(?:game|gaming) mode|(?:game|gaming) mode off|(?:fin|termina|sal|desactiva|apaga) (?:del |el )?modo (?:juego|gamer|gaming)|(?:fim|sai|desativa|desliga) (?:do |o )?modo (?:jogo|gamer|gaming)|(?:выключи|выйди из|заверши|отключи) игров|(?<!เ)ปิดโหมด(?:เล่น)?เกม|ออกจากโหมด(?:เล่น)?เกม|เลิกโหมด(?:เล่น)?เกม|จบโหมด(?:เล่น)?เกม/iu;
 const GAME_CLOSE = /(?:mode (?:jeu|gaming)|(?:game|gaming) mode|modo (?:juego|jogo|gaming)|игров\p{L}* режим\p{L}*),?\s+(?:ferme|close|cierra|fecha|закрой|закрывай)\s+(.{2,80}?)\s*[.!?]*$/iu;
 
-const NET = /internet (?:ne )?(?:marche|fonctionne|va|passe) (?:plus|pas)|(?:plus|pas) (?:de |d['’])?(?:internet|connexion|r[ée]seau)|pourquoi (?:j['’]ai )?(?:pas|plus) internet|connexion (?:ne )?(?:marche|fonctionne) (?:plus|pas)|internet (?:is )?(?:not working|down|broken|isn['’]t working)|(?:no|lost) (?:internet|connection)|why (?:is|isn['’]t) (?:my )?internet|(?:can['’]t|cannot) connect to (?:the )?internet|internet no (?:funciona|va|anda)|sin (?:internet|conexi[oó]n)|internet n[ãa]o (?:funciona|est[áa] funcionando|pega)|sem (?:internet|conex[ãa]o)|интернет не работает|нет интернета|пропал интернет/iu;
+const NET = /internet (?:ne )?(?:marche|fonctionne|va|passe) (?:plus|pas)|(?:plus|pas) (?:de |d['’])?(?:internet|connexion|r[ée]seau)|pourquoi (?:j['’]ai )?(?:pas|plus) internet|connexion (?:ne )?(?:marche|fonctionne) (?:plus|pas)|internet (?:is )?(?:not working|down|broken|isn['’]t working)|(?:no|lost) (?:internet|connection)|why (?:is|isn['’]t) (?:my )?internet|(?:can['’]t|cannot) connect to (?:the )?internet|internet no (?:funciona|va|anda)|sin (?:internet|conexi[oó]n)|internet n[ãa]o (?:funciona|est[áa] funcionando|pega)|sem (?:internet|conex[ãa]o)|интернет не работает|нет интернета|пропал интернет|เน็ตไม่ได้|เน็ตหลุด|เน็ตเสีย|เน็ตไม่ทำงาน|เน็ตใช้ไม่ได้|ไม่มีเน็ต|ต่อเน็ตไม่ได้/iu;
 
 // the words around a name: "désactive Discord au démarrage" -> "Discord"
 const FILLER = /(?<![\p{L}])(?:le|la|les|l['’]|du|de|des|au|à|a|en|mon|ma|mes|the|my|from|at|on|in|of|el|los|las|del|al|mi|mis|o|os|as|do|da|no|na|meu|minha|в|из|при|и|stp|svp|please|pls|por favor|пожалуйста|programme|app|appli|application|program|programa|aplicativo|программ\p{L}*|приложени\p{L}*)(?![\p{L}])/giu;

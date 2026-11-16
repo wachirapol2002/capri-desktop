@@ -4,6 +4,7 @@ import { Chip, Mask } from './chip.js';
 import { Panel } from './panel.js';
 import { Voice } from './voice.js';
 import { Speech } from './speech.js';
+import { Live } from './live.js';
 import { Brain } from './brain.js';
 import { Guide } from './guide.js';
 import { Mission } from './mission.js';
@@ -255,6 +256,10 @@ async function boot() {
   brain.bond = bond;
   chat.bond = bond;
   chat.speech = speech;
+  // talking out loud with her (Gemini Live), Claude Code working in a window of its own for it
+  const live = new Live({ capri, panel, voice, host, brain, chat, guide });
+  chat.live = live;
+  chat.liveOn = Boolean(config.live?.on);
   capri.fondness = bond.stage;
   const jealousy = new Jealousy({ capri, panel, brain, bond, chat, guide, host });
   jealousy.enabled = config.jealous !== false;
@@ -547,7 +552,10 @@ async function boot() {
   // what's in here, for --dev scripts (debug route `eval`)
   window.dev = { capri, brain, panel, chat, guide, fx, voice, bond, jealousy, reminders, look, pc, setup, breaks, screens: () => screens };
 
-  host.onClaudeEvent((evt) => brain.handle(evt));
+  host.onClaudeEvent((evt) => {
+    brain.handle(evt);
+    live.onClaudeEvent(evt); // the work she handed over out loud: done, or waiting on you
+  });
   host.onWindows((data) => {
     capri.setWindows(data);
     brain.onWindows(data);
@@ -639,6 +647,7 @@ async function boot() {
     voice.configure(cfg);
     speech.configure(cfg);
     jealousy.enabled = cfg.jealous !== false;
+    chat.liveOn = Boolean(cfg.live?.on);
     jealousy.closePages = cfg.closePages !== false;
     followOn = cfg.follow !== false;
     look.configure(cfg);
@@ -691,6 +700,20 @@ async function boot() {
         break;
       case 'setupKey': // "API key or address" in her menu's AI model, or a service picked there that needs one
         setup.key();
+        break;
+      case 'liveStart': // her menu › Talk out loud › Talk now
+        if (chat.open) panel.hide(); // her typed chat makes way
+        live.start();
+        break;
+      case 'liveToggle': // Ctrl+Alt+V: talking out loud, on or off
+        if (live.active) panel.hide(); // her panel going ends it
+        else {
+          if (chat.open) panel.hide();
+          live.start();
+        }
+        break;
+      case 'liveKey': // her menu › Talk out loud › Gemini key
+        live.askKey();
         break;
       case 'setupVoice': // her menu › Her voice: a voice picked, or "Set her voice"
         setup.voiceSettings();

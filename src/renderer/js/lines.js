@@ -1,6 +1,8 @@
 // What Capri says. She's a personality construct — dozens of minds in one — so she
 // sometimes talks as "we". Slang is Night City's: choom, preem, nova, flatline.
 
+import { TH, TH_OTHERS } from './lines-th.js';
+
 export const LINES = {
   fr: {
     state: { work: 'EN COURS', done: 'TERMINÉ', alert: 'ATTENTE', error: 'ERREUR', info: 'SYNC', idle: 'VEILLE', remind: 'RAPPEL' },
@@ -247,6 +249,13 @@ export const LINES = {
         missing: 'Pas de dossier Claude sur ce PC.',
         missingHow: 'Il apparaît quand Claude Code est installé et lancé une fois. Après, je pourrai m’y brancher.',
       },
+    },
+    // lui parler à voix haute (live.js, Gemini Live)
+    live: {
+      badge: 'EN DIRECT', connecting: 'Je me branche…', listening: 'Je t’écoute. Parle-moi.',
+      placeholder: 'Parle… ou écris', noteTag: 'GEMINI LIVE', note: 'Ta voix part chez Google tant que je t’écoute.',
+      noKey: 'Il me faut une clé Gemini pour te parler à voix haute.', key: 'Ta clé Gemini ?', keyHow: 'Gratuite sur Google AI Studio. Elle reste chiffrée sur ton PC.',
+      failed: 'Je n’arrive pas à me brancher : {error}', micDenied: 'Je n’ai pas accès à ton micro.', handed: 'Claude s’en occupe dans sa fenêtre ({folder}).',
     },
     // la mettre en route avec des boutons (setup.js) : Ollama, un modèle, une clé
     setup: {
@@ -713,6 +722,13 @@ export const LINES = {
         missingHow: 'It shows up once Claude Code is installed and has run once. Then I can plug in.',
       },
     },
+    // talking with her out loud (live.js, Gemini Live)
+    live: {
+      badge: 'LIVE', connecting: 'Plugging in…', listening: 'I’m listening. Talk to me.',
+      placeholder: 'Talk… or type', noteTag: 'GEMINI LIVE', note: 'Your voice goes to Google while I listen.',
+      noKey: 'I need a Gemini key to talk out loud.', key: 'Your Gemini key?', keyHow: 'Free on Google AI Studio. It stays encrypted on your PC.',
+      failed: 'I can’t plug in: {error}', micDenied: 'I can’t get to your microphone.', handed: 'Claude’s on it in its window ({folder}).',
+    },
     // setting her up with buttons (setup.js): Ollama, a model, a key
     setup: {
       voice: {
@@ -1170,6 +1186,13 @@ export const LINES = {
         missing: 'No hay carpeta de Claude en este PC.',
         missingHow: 'Aparece cuando Claude Code está instalado y se ha abierto una vez. Después podré conectarme.',
       },
+    },
+    // hablar con ella en voz alta (live.js, Gemini Live)
+    live: {
+      badge: 'EN VIVO', connecting: 'Conectándome…', listening: 'Te escucho. Háblame.',
+      placeholder: 'Habla… o escribe', noteTag: 'GEMINI LIVE', note: 'Tu voz va a Google mientras te escucho.',
+      noKey: 'Necesito una clave de Gemini para hablar en voz alta.', key: '¿Tu clave de Gemini?', keyHow: 'Gratis en Google AI Studio. Se queda cifrada en tu PC.',
+      failed: 'No puedo conectarme: {error}', micDenied: 'No tengo acceso a tu micrófono.', handed: 'Claude se encarga en su ventana ({folder}).',
     },
     // ponerla en marcha con botones (setup.js): Ollama, un modelo, una clave
     setup: {
@@ -1630,6 +1653,13 @@ export const LINES = {
         missing: 'Não tem pasta do Claude neste PC.',
         missingHow: 'Ela aparece quando o Claude Code está instalado e já foi aberto uma vez. Aí eu consigo me conectar.',
       },
+    },
+    // falar com ela em voz alta (live.js, Gemini Live)
+    live: {
+      badge: 'AO VIVO', connecting: 'Conectando…', listening: 'Tô ouvindo. Fala comigo.',
+      placeholder: 'Fala… ou digita', noteTag: 'GEMINI LIVE', note: 'Sua voz vai pro Google enquanto eu ouço.',
+      noKey: 'Preciso de uma chave do Gemini pra falar em voz alta.', key: 'Sua chave do Gemini?', keyHow: 'Grátis no Google AI Studio. Fica criptografada no seu PC.',
+      failed: 'Não consigo conectar: {error}', micDenied: 'Não tenho acesso ao seu microfone.', handed: 'O Claude tá cuidando disso na janela dele ({folder}).',
     },
     // deixar ela pronta com botões (setup.js): Ollama, um modelo, uma chave
     setup: {
@@ -2093,6 +2123,13 @@ export const LINES = {
         missingHow: 'Она появляется, когда Claude Code установлен и запущен хотя бы раз. Тогда я смогу подключиться.',
       },
     },
+    // говорить с ней вслух (live.js, Gemini Live)
+    live: {
+      badge: 'В ЭФИРЕ', connecting: 'Подключаюсь…', listening: 'Слушаю. Говори.',
+      placeholder: 'Говори… или пиши', noteTag: 'GEMINI LIVE', note: 'Пока я слушаю, твой голос уходит в Google.',
+      noKey: 'Чтобы говорить вслух, мне нужен ключ Gemini.', key: 'Твой ключ Gemini?', keyHow: 'Бесплатно в Google AI Studio. Хранится на твоём ПК в зашифрованном виде.',
+      failed: 'Не могу подключиться: {error}', micDenied: 'Нет доступа к микрофону.', handed: 'Claude занимается этим в своём окне ({folder}).',
+    },
     // запустить её кнопками (setup.js): Ollama, модель, ключ
     setup: {
       voice: {
@@ -2328,6 +2365,15 @@ export const LINES = {
   },
 };
 
+// Thai (lines-th.js), over English: a line it doesn't have yet is said in English rather than missing
+function over(base, add) {
+  if (!add || typeof add !== 'object' || Array.isArray(add) || !base || typeof base !== 'object' || Array.isArray(base)) return add ?? base;
+  const out = { ...base };
+  for (const [k, v] of Object.entries(add)) out[k] = over(base[k], v);
+  return out;
+}
+LINES.th = over(LINES.en, TH);
+
 // The coding assistants she can watch besides Claude Code: the same lines with their name, their
 // hooks file, and what to do once her hooks are in.
 export const ASSISTANT_NAMES = { claude: 'Claude Code', codex: 'Codex', agy: 'Antigravity' };
@@ -2341,6 +2387,7 @@ const OTHERS = {
       es: '¿Quieres que me conecte a Codex? Un clic, y luego reinicia Codex y autoriza mis hooks cuando te lo pida.',
       pt: 'Quer que eu me conecte ao Codex? Um clique, depois reinicie o Codex e autorize meus hooks quando ele pedir.',
       ru: 'Подключиться к Codex? Один клик, потом перезапусти Codex и разреши мои хуки, когда он спросит.',
+      th: TH_OTHERS.codex.ask,
     },
     after: {
       en: 'Now restart Codex and trust my hooks when it asks. As soon as it does something, I’ll tell you.',
@@ -2348,6 +2395,7 @@ const OTHERS = {
       es: 'Ahora reinicia Codex y autoriza mis hooks cuando te lo pida. En cuanto haga algo, te aviso.',
       pt: 'Agora reinicie o Codex e autorize meus hooks quando ele pedir. Assim que ele fizer algo, eu te aviso.',
       ru: 'Теперь перезапусти Codex и разреши мои хуки, когда он спросит. Как только он что-то сделает, я скажу.',
+      th: TH_OTHERS.codex.after,
     },
   },
   agy: {
@@ -2358,6 +2406,7 @@ const OTHERS = {
       es: '¿Quieres que me conecte a Antigravity? Un clic, y luego empieza una conversación nueva en él.',
       pt: 'Quer que eu me conecte ao Antigravity? Um clique, depois comece uma conversa nova nele.',
       ru: 'Подключиться к Antigravity? Один клик, потом начни в нём новый разговор.',
+      th: TH_OTHERS.agy.ask,
     },
     after: {
       en: 'Now start a new conversation in Antigravity. As soon as it does something, I’ll tell you.',
@@ -2365,6 +2414,7 @@ const OTHERS = {
       es: 'Ahora empieza una conversación nueva en Antigravity. En cuanto haga algo, te aviso.',
       pt: 'Agora comece uma conversa nova no Antigravity. Assim que ele fizer algo, eu te aviso.',
       ru: 'Теперь начни новый разговор в Antigravity. Как только он что-то сделает, я скажу.',
+      th: TH_OTHERS.agy.after,
     },
   },
 };

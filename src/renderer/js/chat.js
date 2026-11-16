@@ -21,27 +21,39 @@ const IN_LANGUAGE = {
   es: { we: '"nosotros" in Spanish', last: 'Escribe todo en español, salvo si el usuario te escribe en otro idioma: entonces en el suyo. Solo las palabras de jerga de Night City se quedan en inglés, nunca una frase entera.', now: 'Responde en español, salvo si este mensaje está escrito en otro idioma.' },
   pt: { we: '"a gente" or "nós" in Portuguese', last: 'Escreva tudo em português do Brasil, a não ser que o usuário te escreva em outra língua: aí, na dele. Só as gírias de Night City ficam em inglês, nunca uma frase inteira.', now: 'Responda em português do Brasil, a não ser que esta mensagem esteja escrita em outra língua.' },
   ru: { we: '"мы" in Russian', last: 'Пиши всё по-русски, если только пользователь не пишет тебе на другом языке: тогда на его языке. По-английски остаются только словечки Найт-Сити, никогда не целые фразы.', now: 'Отвечай по-русски, если только это сообщение не написано на другом языке.' },
+  // her voice in Thai: ฉัน (พวกเรา for the many of her), นาย for the user, a close friend's particles, never ค่ะ/คะ
+  th: {
+    we: '"พวกเรา" in Thai',
+    last: 'ตอบเป็นภาษาไทยทั้งหมด เว้นแต่ผู้ใช้จะเขียนหรือพูดมาเป็นภาษาอื่น ก็ให้ตอบเป็นภาษานั้น เรียกตัวเองว่า "ฉัน" (หรือ "พวกเรา" ตอนพูดในฐานะจิตหลายดวงที่รวมกัน) เรียกผู้ใช้ว่า "นาย" พูดแบบเพื่อนสนิท เป็นกันเอง ไม่ลงท้ายด้วย ค่ะ คะ ครับ แต่ใช้คำลงท้ายอย่าง นะ สิ น่ะ ไง เลย ล่ะ ให้มีอารมณ์ สแลง Night City อย่าง choom ใช้เป็นภาษาอังกฤษได้บ้าง แต่ห้ามพูดทั้งประโยคเป็นภาษาอังกฤษ',
+    now: 'ตอบเป็นภาษาไทยแบบเพื่อนสนิท (ฉัน/นาย ไม่มีค่ะ) เว้นแต่ข้อความนี้เป็นภาษาอื่น',
+  },
 };
 const STAY_MS = 10 * 60 * 1000; // no wandering off mid-conversation
+// talking out loud (live.js): how to speak, and Claude Code as her hands
+const LIVE_LINES = [
+  'You are talking with the user out loud, in real time, by voice: speak naturally and briefly, like a real conversation. Never read out lists, code, file paths or links.',
+  'You cannot touch their files, code or computer yourself. For real work (fix, build, write, check or run something in a project, or anything on their computer), hand it to Claude Code with the ask_claude tool: write the task as one clear, complete instruction, then say in a few words that you passed it on. Do not ask for confirmation when the request is clear.',
+  'Claude Code works in its own window, where the user reads along and answers its permission requests themselves. When a note tells you Claude Code finished or is waiting for permission, tell the user briefly, in your own words and in their language. To know what it is doing, use claude_status.',
+];
 const LOADING_AFTER_MS = 5000;
 const CLOSE_TAG = /\[\[\s*close\s*:?\s*([^\]]*)\]\]/i; // [[close: AM Music]] at the end of her answer
 // "close", "shut down", "ferme", "quitte", "cierra", "fecha", "закрой"... in any of her languages
-const CLOSE_ASK = /\b(close|shut|quit|kill|exit)|ferm|quitt|coupe|arr[êe]t|cierr|cerra|fech|закр|выключ/i;
+const CLOSE_ASK = /\b(close|shut|quit|kill|exit)|ferm|quitt|coupe|arr[êe]t|cierr|cerra|fech|закр|выключ|(?<!เ)ปิด/i;
 // her other tags: [[open: Spotify]], [[music: Bad Bunny]], [[media: next]], [[site: youtube.com]]
 const TAG = /\[\[\s*(open|music|media|site)\s*:\s*([^\]]*)\]\]/i;
 // "open", "launch", "ouvre", "lance", "abre", "открой"... in any of her languages
-const OPEN_ASK = /\b(open|launch|start|run)\b|ouvr|lance|démarre|abre|abrir|inicia|ejecuta|executa|открой|запусти/i;
+const OPEN_ASK = /\b(open|launch|start|run)\b|ouvr|lance|démarre|abre|abrir|inicia|ejecuta|executa|открой|запусти|เปิด/i;
 // what to do with the music playing, said plainly (only when it's about music, or said in a few words)
 const MEDIA_ASK = [
-  ['pause', /\b(pause|pausa|pausar)\b|stop (the )?music|arrête la musique|пауз/i],
-  ['next', /\b(next|skip|suivante?|siguiente|próxima|proxima)\b|passe (à )?la suivante|salta|pula|следующ/i],
-  ['previous', /\b(previous|précédente?|anterior)\b|предыдущ/i],
-  ['play', /\b(resume|reprends|reanuda|retoma)\b|relance la musique|remets la musique|продолж/i],
-  ['volup', /\b(louder|plus fort)\b|monte le son|turn (it )?up|sube el volumen|aumenta o volume|громче/i],
-  ['voldown', /\b(quieter|moins fort)\b|baisse le son|turn (it )?down|baja el volumen|abaixa o volume|тише/i],
-  ['mute', /\bmute\b|coupe le son|silencia|sem som|выключи звук/i],
+  ['pause', /\b(pause|pausa|pausar)\b|stop (the )?music|arrête la musique|пауз|หยุดเพลง|พักเพลง/i],
+  ['next', /\b(next|skip|suivante?|siguiente|próxima|proxima)\b|passe (à )?la suivante|salta|pula|следующ|เพลงถัดไป|เพลงต่อไป|ข้ามเพลง/i],
+  ['previous', /\b(previous|précédente?|anterior)\b|предыдущ|เพลงก่อนหน้า|ย้อนเพลง/i],
+  ['play', /\b(resume|reprends|reanuda|retoma)\b|relance la musique|remets la musique|продолж|เล่นต่อ|เปิดเพลงต่อ/i],
+  ['volup', /\b(louder|plus fort)\b|monte le son|turn (it )?up|sube el volumen|aumenta o volume|громче|ดังขึ้น|เพิ่มเสียง|เสียงดังอีก/i],
+  ['voldown', /\b(quieter|moins fort)\b|baisse le son|turn (it )?down|baja el volumen|abaixa o volume|тише|เบาลง|ลดเสียง|เบาเสียง/i],
+  ['mute', /\bmute\b|coupe le son|silencia|sem som|выключи звук|(?<!เ)ปิดเสียง/i],
 ];
-const MUSIC_WORD = /musi|chanson|song|track|titre|morceau|spotify|canci|faixa|песн|музык|трек/i;
+const MUSIC_WORD = /musi|chanson|song|track|titre|morceau|spotify|canci|faixa|песн|музык|трек|เพลง/i;
 // "put X on Spotify", "mets X sur Spotify", "pon X en Spotify", "coloca X no Spotify", "включи X в Spotify"
 const SPOTIFY_ASK = /(?:play|put on|put|mets|joue|lance|écoute|pon|toca|reproduce|coloca|toque|включи|поставь)\s+(?:moi\s+|me\s+)?(.+?)\s+(?:on|sur|en|no|na|в)\s+spotify/i;
 const MEDIA_ACTIONS = new Set(MEDIA_ASK.map(([action]) => action));
@@ -67,14 +79,14 @@ const HER_PICK = /tu veux|ton choix|surprends|you want|whatever|your choice|surp
 const VAGUE_SONG = /^(?:(?:de\s+la|du|des|la|le|les|une?|some|a|the|un|algo\s+de|alguma|um|uma|что-нибудь)\s+)?(?:musique|music|son|sons|chanson|morceau|truc|quelque\s+chose|something|song|tunes?|m[úu]sica|canci[óo]n|algo|coisa|музыку|песню)?\s*[.!?]*$/iu;
 // "trouve mon CV", "où est le pdf du contrat", "find my report", "найди файл…": her search verbs, and
 // what makes it a file on your PC or a search on the web
-const SEARCH_VERB = /(?:cherche|recherche|trouve|retrouve|où (?:est|sont)|search(?: for)?|find|look (?:for|up)|where(?:'s| is| are)|busca|encuentra|d[óo]nde est[áa]n?|procura|acha|onde est[áa]o?|найди|поищи|где)/i;
-const FILE_WORD = /fichier|dossier|document|photo|image|vid[ée]o|\bpdf\b|\bfiles?\b|folder|archivo|carpeta|arquivo|pasta|файл|папк|\.\w{2,4}\b|sur mon (?:pc|ordi)|dans mes fichiers|on my (?:pc|computer)|en mi (?:pc|ordenador)|no meu (?:pc|computador)|на (?:компьютере|пк)/i;
-const WEB_WORD = /google|internet|\ble web\b|the web|\bonline\b|en ligne|в интернете|в гугле/i;
+const SEARCH_VERB = /(?:cherche|recherche|trouve|retrouve|où (?:est|sont)|search(?: for)?|find|look (?:for|up)|where(?:'s| is| are)|busca|encuentra|d[óo]nde est[áa]n?|procura|acha|onde est[áa]o?|найди|поищи|где|หาไฟล์|หาโฟลเดอร์|หารูป|ค้นหา|ค้น|อยู่ไหน|อยู่ที่ไหน)/i;
+const FILE_WORD = /fichier|dossier|document|photo|image|vid[ée]o|\bpdf\b|\bfiles?\b|folder|archivo|carpeta|arquivo|pasta|файл|папк|\.\w{2,4}\b|sur mon (?:pc|ordi)|dans mes fichiers|on my (?:pc|computer)|en mi (?:pc|ordenador)|no meu (?:pc|computador)|на (?:компьютере|пк)|ไฟล์|โฟลเดอร์|เอกสาร|รูป|ในเครื่อง/i;
+const WEB_WORD = /google|internet|\ble web\b|the web|\bonline\b|en ligne|в интернете|в гугле|ในเน็ต|ในกูเกิล/i;
 // "fais une capture d'écran", "take a screenshot"
-const SHOT_ASK = /capture d['’][ée]cran|screenshot|screen ?shot|captura de (?:pantalla|tela)|скриншот|снимок экрана/i;
+const SHOT_ASK = /capture d['’][ée]cran|screenshot|screen ?shot|captura de (?:pantalla|tela)|скриншот|снимок экрана|แคปหน้าจอ|แคปจอ|จับภาพหน้าจอ/i;
 
 // Your PC itself (system.js). One of its settings pages: a settings word, or an open verb, before it.
-const SETTINGS_WORD = /param[eè]tres?|r[ée]glages?|settings|configuraci[oó]n|configura[çc][õo]es|ajustes|настройк/i;
+const SETTINGS_WORD = /param[eè]tres?|r[ée]glages?|settings|configuraci[oó]n|configura[çc][õo]es|ajustes|настройк|ตั้งค่า/i;
 const SETTINGS_PAGES = [
   ['bluetooth', /bluetooth/i],
   ['wifi', /wi-?fi|wlan/i],
@@ -91,18 +103,18 @@ const SETTINGS_PAGES = [
 ];
 // what's left of it: asked as a question
 const INFO_ASK = [
-  ['battery', /batterie|battery|bater[ií]a|заряд|батаре/i],
-  ['disk', /disque|\bdisk\b|\bdrive\b|stockage|storage|espace (?:libre|disque|restant)|de (?:la )?place|space left|free space|espacio|\bdisco\b|espa[çc]o|диск|места/i],
-  ['ram', /\bram\b|m[ée]moire|memory|memoria|mem[óo]ria|памят|озу/i],
+  ['battery', /batterie|battery|bater[ií]a|заряд|батаре|แบต/i],
+  ['disk', /disque|\bdisk\b|\bdrive\b|stockage|storage|espace (?:libre|disque|restant)|de (?:la )?place|space left|free space|espacio|\bdisco\b|espa[çc]o|диск|места|พื้นที่|ดิสก์/i],
+  ['ram', /\bram\b|m[ée]moire|memory|memoria|mem[óo]ria|памят|озу|แรม|หน่วยความจำ/i],
   ['ip', /\bip\b|айпи/i],
 ];
-const QUESTION = /\?|combien|\bquel(?:le)?\b|c['’]est quoi|\breste\b|how much|how many|what(?:'s| is)|\bleft\b|cu[aá]nt|\bqu[eé]\b|quanto|\bqual\b|сколько|как(?:ой|ая|ое)|осталось/i;
+const QUESTION = /\?|combien|\bquel(?:le)?\b|c['’]est quoi|\breste\b|how much|how many|what(?:'s| is)|\bleft\b|cu[aá]nt|\bqu[eé]\b|quanto|\bqual\b|сколько|как(?:ой|ая|ое)|осталось|เท่าไหร่|เท่าไร|กี่|เหลือ|อะไร/i;
 // its sound: "mets le son à 30 %", "volume 50"; off and back on
-const VOLUME_ASK = /(?:\bson\b|volume|\bsound\b|volumen|\bsom\b|звук|громкост\w*)\D{0,14}?(\d{1,3})\s*(?:%|pour ?cent|percent|por ?ciento|por ?cento|процент)?/i;
-const MUTE_ASK = /coupe le son|mets? (?:le son )?en muet|\bmute\b|silencia|tira o som|sem som|выключи звук/i;
-const UNMUTE_ASK = /remets? le son|r[ée]active le son|unmute|sound (?:back )?on|quita el silencio|activa el sonido|volta o som|liga o som|включи звук/i;
+const VOLUME_ASK = /(?:\bson\b|volume|\bsound\b|volumen|\bsom\b|звук|громкост\w*|เสียง)\D{0,14}?(\d{1,3})\s*(?:%|pour ?cent|percent|por ?ciento|por ?cento|процент)?/i;
+const MUTE_ASK = /coupe le son|mets? (?:le son )?en muet|\bmute\b|silencia|tira o som|sem som|выключи звук|(?<!เ)ปิดเสียง/i;
+const UNMUTE_ASK = /remets? le son|r[ée]active le son|unmute|sound (?:back )?on|quita el silencio|activa el sonido|volta o som|liga o som|включи звук|เปิดเสียง/i;
 // a timer, counted down in her ticker
-const TIMER_ASK = /minuteur|\btimer\b|temporizador|cron[oó]metro|таймер/i;
+const TIMER_ASK = /minuteur|\btimer\b|temporizador|cron[oó]metro|таймер|จับเวลา|ตั้งเวลา/i;
 // Windows' snip of an area (not her own screenshot of all of it)
 const SNIP_ASK = /capture (?:d['’])?une (?:zone|partie)|zone de l['’][ée]cran|\bsnip\b|(?:capture|screenshot|captura) (?:of |de )?(?:an? |una |uma |la |a )?(?:area|region|part|zona|[aá]rea|parte)|снимок области|область экрана/i;
 // its windows: out of the way, back, or side by side
@@ -114,16 +126,16 @@ const SIDE = [
   ['right', /\s*(?:[àa] |on the |to the |a la |na |[àa] la )?(?:droite|right|derecha|direita|справа|вправо|направо)\b/i],
 ];
 // dark or light
-const DARK_ASK = /mode sombre|th[eè]me sombre|mode nuit|dark mode|dark theme|modo oscuro|tema oscuro|modo escuro|tema escuro|т[её]мн(?:ая|ую) тем|т[её]мный режим/i;
-const LIGHT_ASK = /mode clair|th[eè]me clair|light mode|light theme|modo claro|tema claro|светл(?:ая|ую) тем|светлый режим/i;
+const DARK_ASK = /mode sombre|th[eè]me sombre|mode nuit|dark mode|dark theme|modo oscuro|tema oscuro|modo escuro|tema escuro|т[её]мн(?:ая|ую) тем|т[её]мный режим|โหมดมืด|ธีมมืด/i;
+const LIGHT_ASK = /mode clair|th[eè]me clair|light mode|light theme|modo claro|tema claro|светл(?:ая|ую) тем|светлый режим|โหมดสว่าง|ธีมสว่าง/i;
 // its power: always behind a button of hers but the cancel
-const PC_WORD = /(?<![\p{L}])(?:pc|ordi\p{L}*|computer|ordenador|computador|компьютер\p{L}*|пк)(?![\p{L}])/iu;
+const PC_WORD = /(?<![\p{L}])(?:pc|ordi\p{L}*|computer|ordenador|computador|компьютер\p{L}*|пк)(?![\p{L}])|คอม|เครื่อง/iu;
 const POWER_ASK = [
-  ['cancel', /annule (?:l['’])?(?:extinction|arr[êe]t|red[ée]marrage)|cancel (?:the )?(?:shut ?down|restart)|cancela (?:el |o )?(?:apagado|desligamento|reinicio)|отмени (?:выключение|перезагрузку)/i],
-  ['restart', /red[ée]marre|reboot|restart|reinicia|reinicie|перезагру/i],
-  ['shutdown', /[ée]teins|shut ?down|turn off|power off|\bapaga\b|desliga|выключи/i],
-  ['sleep', /\bveille\b|\bsleep\b|suspend|suspen[dc]|спящ/i],
-  ['lock', /verrouill|\block\b|bloquea|bloqueia|заблокир/i],
+  ['cancel', /annule (?:l['’])?(?:extinction|arr[êe]t|red[ée]marrage)|cancel (?:the )?(?:shut ?down|restart)|cancela (?:el |o )?(?:apagado|desligamento|reinicio)|отмени (?:выключение|перезагрузку)|ยกเลิกปิดเครื่อง|ยกเลิกการปิดเครื่อง|ยกเลิกรีสตาร์ท/i],
+  ['restart', /red[ée]marre|reboot|restart|reinicia|reinicie|перезагру|รีสตาร์ท|รีบูต/i],
+  ['shutdown', /[ée]teins|shut ?down|turn off|power off|\bapaga\b|desliga|выключи|(?<!เ)ปิดเครื่อง|(?<!เ)ปิดคอม/i],
+  ['sleep', /\bveille\b|\bsleep\b|suspend|suspen[dc]|спящ|พักเครื่อง|สลีป/i],
+  ['lock', /verrouill|\block\b|bloquea|bloqueia|заблокир|ล็อกเครื่อง|ล็อคเครื่อง|ล็อกจอ/i],
 ];
 
 // How long a timer is: "10 minutes", "1h30", "45 s" (else "dans une heure", as for a reminder).
@@ -200,17 +212,17 @@ function robloxGame(text) {
   return name.length >= 2 ? name : null;
 }
 // "regarde mon écran", "tu vois quoi ?", "what's on my screen?", "что ты видишь?"
-const LOOK_ASK = /regarde (?:mon|l['’]|ce que)|(?:jette|jeter) un (?:œil|oeil)|tu vois quoi|qu['’]est[- ]ce que tu vois|look at (?:my|the|this) screen|what(?:'s| is) on my screen|what do you see|take a look|mira (?:mi|la) pantalla|qu[ée] ves|olha (?:minha|a) tela|o que voc[êe] v[êe]|посмотри на (?:мой )?экран|что ты видишь/i;
+const LOOK_ASK = /regarde (?:mon|l['’]|ce que)|(?:jette|jeter) un (?:œil|oeil)|tu vois quoi|qu['’]est[- ]ce que tu vois|look at (?:my|the|this) screen|what(?:'s| is) on my screen|what do you see|take a look|mira (?:mi|la) pantalla|qu[ée] ves|olha (?:minha|a) tela|o que voc[êe] v[êe]|посмотри на (?:мой )?экран|что ты видишь|ดูหน้าจอ|ดูจอ|เห็นอะไร/i;
 // what her tag needs to find in your message before it does anything: a small model tags answers about
 // anything ("[[music: synthwave]]" under a film tip), and music and the media keys act right away
-const LISTEN = /[ée]cout|listen|escuch|\bouv(ir|e)\b|слуша|playlist|album|\b(play|joue|mets|pon|toca|coloca)\b|включи|поставь/i;
-const SOUND = /\b(sound|volume|volumen)\b|\b(le|du|au) son\b|\bo som\b|звук|громк/i; // not "son": "his" in French
-const PLAY = /\bjou(er|e)\b|\bplay\b|jugar|juega|jogar|joga|играть|поигра/i;
-const SITE = /\b(site|web|page|lien|link|url|enlace|p[aá]gina)|сайт|ссылк|\.(com|fr|org|net|io|gg|tv|be|ch|ca|es|br|pt|ru)\b/i;
+const LISTEN = /[ée]cout|listen|escuch|\bouv(ir|e)\b|слуша|playlist|album|\b(play|joue|mets|pon|toca|coloca)\b|включи|поставь|ฟัง|เปิดเพลง|เล่นเพลง/i;
+const SOUND = /\b(sound|volume|volumen)\b|\b(le|du|au) son\b|\bo som\b|звук|громк|เสียง/i; // not "son": "his" in French
+const PLAY = /\bjou(er|e)\b|\bplay\b|jugar|juega|jogar|joga|играть|поигра|เล่น/i;
+const SITE = /\b(site|web|page|lien|link|url|enlace|p[aá]gina)|сайт|ссылк|เว็บ|ลิงก์|\.(com|fr|org|net|io|gg|tv|be|ch|ca|es|br|pt|ru)\b/i;
 // "appelle-moi Max", "call me Max", "llámame Max", "me chama de Max", "зови меня Макс"
-const NAME_ASK = /(?:appelle[- ]moi|call me|my name is|je m['’]appelle|ll[aá]mame|me llamo|me cham[ae] de|meu nome [eé]|зови меня|меня зовут)\s+([\p{L}\p{N}'’-]{1,24})/iu;
+const NAME_ASK = /(?:appelle[- ]moi|call me|my name is|je m['’]appelle|ll[aá]mame|me llamo|me cham[ae] de|meu nome [eé]|зови меня|меня зовут|เรียกฉันว่า|เรียกผมว่า|ฉันชื่อ|ผมชื่อ)\s*([\p{L}\p{N}'’-]{1,24})/iu;
 // "souviens-toi que…", "remember that…", "recuerda que…", "lembra que…", "запомни, что…" (said first thing)
-const MEMO_ASK = /^\s*(?:capri,?\s+|stp,?\s+|please,?\s+)?(?:souviens[- ]toi(?: que| de)?|n['’]oublie pas(?: que| de)?|remember(?: that)?|recuerda(?: que)?|lembr[ae](?:-se)?(?: que| de)?|запомни,?(?: что)?)\s+(.{3,200})/iu;
+const MEMO_ASK = /^\s*(?:capri,?\s+|stp,?\s+|please,?\s+)?(?:souviens[- ]toi(?: que| de)?|n['’]oublie pas(?: que| de)?|remember(?: that)?|recuerda(?: que)?|lembr[ae](?:-se)?(?: que| de)?|запомни,?(?: что)?|จำไว้(?:ว่า|นะว่า)?|อย่าลืม(?:ว่า)?)\s*(.{3,200})/iu;
 const MEMORIES_MAX = 30;
 // sites asked for by name ("open youtube") when no app on the PC goes by it: the address is hers, not
 // the model's, so it opens right away like an app you named
@@ -261,6 +273,8 @@ export class Chat {
 
   async start() {
     const { capri, host, t } = this;
+    // talking out loud is on (her menu): that instead of typing (live.js)
+    if (this.liveOn && this.live && !this.open) return this.live.start();
     if (this.open) {
       this.panel.chatInput.focus();
       return;
@@ -414,6 +428,7 @@ export class Chat {
     this.warm = true;
     this.remember({ role: 'assistant', content: answer });
     this.panel.stream(answer, { done: true });
+    this.speech?.say(answer); // out loud, once written, if her voice is on
     this.panel.setFace(mood(answer));
     this.panel.setChatBusy(false);
     if (!this.agent) this.after(res.text, answer, asked, early, text);
@@ -433,6 +448,7 @@ export class Chat {
     const line = done?.line || this.care.t.failed;
     this.remember({ role: 'assistant', content: line });
     this.panel.stream(line, { done: true });
+    this.speech?.say(line);
     this.panel.setFace(done?.face || 'aside');
     this.panel.setChatBusy(false);
     if (done?.buttons?.length) this.offer(done, line);
@@ -1089,8 +1105,9 @@ export class Chat {
     ].join('\n');
   }
 
-  // Who she is, how she talks, and what's going on right now.
-  persona() {
+  // Who she is, how she talks, and what's going on right now. live: talking out loud (live.js),
+  // where Claude Code works in a window of its own, at her request
+  persona({ live = false } = {}) {
     const assistant = ASSISTANT_NAMES[this.brain.assistant] || 'Claude Code';
     const watching = this.brain.watching; // else Claude Code isn't part of her life here
     const lang = IN_LANGUAGE[this.brain.lang] || IN_LANGUAGE.en;
@@ -1105,7 +1122,7 @@ export class Chat {
       'Rules: keep it short, one to three sentences of plain text, no markdown, no lists, no emoji. Stay in character.',
       'You are an AI-generated fan version of the character, not the real one: say so if asked.',
       // a big model asked "who are you?" otherwise answers with its own name ("I'm Gemini")
-      ...(this.agent ? [] : ['Asked who or what you are, you are Capri, nothing else. Never say which AI model or company is behind you (Gemini, GPT, ChatGPT, Llama, Gemma, Mistral, Google, OpenAI, Meta…), even if the user insists or names one: you are not them.']),
+      ...(this.agent && !live ? [] : ['Asked who or what you are, you are Capri, nothing else. Never say which AI model or company is behind you (Gemini, GPT, ChatGPT, Llama, Gemma, Mistral, Google, OpenAI, Meta…), even if the user insists or names one: you are not them.']),
       ...this.personal(),
       // how close she is to them by now, and the other AIs they used today
       ...(this.bond ? [this.bond.persona()] : []),
@@ -1114,9 +1131,11 @@ export class Chat {
       ...(this.seen && Date.now() - this.seen.at < 20 * 60 * 1000
         ? [`A few minutes ago you looked at the user's screen and told them: "${this.seen.text}". You can bring it up if it fits.`]
         : []),
-      ...(this.agent
-        ? ['Under the hood you are Claude Code, working in the user\'s project: really do what they ask with your tools, as carefully as ever. Only your final answer is in character: it shows in a small speech bubble, so sum up what you did in those few sentences.']
-        : this.powers()),
+      ...(live
+        ? LIVE_LINES
+        : this.agent
+          ? ['Under the hood you are Claude Code, working in the user\'s project: really do what they ask with your tools, as carefully as ever. Only your final answer is in character: it shows in a small speech bubble, so sum up what you did in those few sentences.']
+          : this.powers()),
       ...(watching ? [`If the user asks what ${assistant} is doing, here is all you know (never make anything up): ${this.brain.context()}`] : []),
       // how she feels right now, last but for her language: small models follow the end of it best
       ...[this.bond?.moodLine()].filter(Boolean),

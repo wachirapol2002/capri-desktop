@@ -488,7 +488,8 @@ export class Brain {
 // forms: [one, other], or by plural category ({ one, few, many, other }) for languages that need more
 function plural(n, forms, lang) {
   const word = Array.isArray(forms) ? forms[n === 1 ? 0 : 1] : forms[new Intl.PluralRules(lang).select(n)] || forms.other;
-  return `${n} ${word}`;
+  // where the number goes, if not first (Thai: "แก้ {n} ไฟล์")
+  return word.includes('{n}') ? word.replace('{n}', n) : `${n} ${word}`;
 }
 
 function clip(text, max) {

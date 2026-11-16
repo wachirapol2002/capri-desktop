@@ -33,6 +33,11 @@ export const fmt = (str, vars = {}) => str.replace(/\{(\w+)\}/g, (_, k) => (vars
 export function duration(ms, lang = 'fr') {
   const ru = lang === 'ru';
   const s = Math.max(0, Math.round(ms / 1000));
+  if (lang === 'th') {
+    if (s < 60) return `${s} วิ`;
+    const m = Math.floor(s / 60);
+    return m < 60 ? `${m} นาที ${s % 60} วิ` : `${Math.floor(m / 60)} ชม. ${m % 60} นาที`;
+  }
   if (s < 60) return ru ? `${s} с` : `${s} s`;
   const m = Math.floor(s / 60);
   const ss = String(s % 60).padStart(2, '0');
