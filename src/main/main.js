@@ -449,6 +449,8 @@ function rebuildTray() {
           })),
         },
         { label: `Claude Code: ${liveFolder()}`, click: pickClaudeFolder },
+        // as administrator: Windows asks every time (UAC), and Claude can then change anything
+        { label: t.liveAdmin, type: 'checkbox', checked: Boolean(cfg.live?.admin), click: (item) => updateConfig({ live: { ...cfg.live, admin: item.checked } }) },
         { label: t.liveKey, click: () => sendCommand('liveKey') },
       ],
     },
@@ -902,7 +904,7 @@ function registerIpc() {
   });
   ipcMain.handle('live:hasKey', () => Boolean(setup.openKeys(config.load(true).apiKeys).gemini));
   // what you asked out loud, to Claude Code in a window of its own (claudewin.js)
-  ipcMain.handle('claude:window', (_e, task) => claudewin.run(String(task || ''), liveFolder()));
+  ipcMain.handle('claude:window', (_e, task) => claudewin.run(String(task || ''), liveFolder(), { admin: Boolean(config.load().live?.admin) }));
   // Edge's voices need edge-tts (Python): whether it's there, and installing it
   ipcMain.handle('speech:edge', () => speech.edgeState());
   ipcMain.handle('speech:edgeInstall', () => speech.installEdge());

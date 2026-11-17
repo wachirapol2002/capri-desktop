@@ -45,8 +45,9 @@ const DEFAULTS = {
   // local server's, `rate` how fast (0.5 to 2)
   speech: { provider: 'off', voice: '', lang: '', url: '', rate: 1 },
   // talking out loud with her (Gemini Live, live.js): `on` a click on her starts that instead of
-  // her typed chat, `voice` hers there (Kore, Aoede…)
-  live: { on: false, voice: '' },
+  // her typed chat, `voice` hers there (Kore, Aoede…), `admin` Claude Code's window for it run as
+  // administrator (Windows asks every time)
+  live: { on: false, voice: '', admin: false },
   lookAsked: false,  // she told you what looking means (where the picture goes) and you said yes
   breaks: true,      // after two hours at your PC without a real break, she tells you to take one (breaks.js)
   setups: {},        // your setups, by name: the apps you had open and where (setups.js)

@@ -32,7 +32,8 @@ const STAY_MS = 10 * 60 * 1000; // no wandering off mid-conversation
 // talking out loud (live.js): how to speak, and Claude Code as her hands
 const LIVE_LINES = [
   'You are talking with the user out loud, in real time, by voice: speak naturally and briefly, like a real conversation. Never read out lists, code, file paths or links.',
-  'You cannot touch their files, code or computer yourself. For real work (fix, build, write, check or run something in a project, or anything on their computer), hand it to Claude Code with the ask_claude tool: write the task as one clear, complete instruction, then say in a few words that you passed it on. Do not ask for confirmation when the request is clear.',
+  'You do quick things on their PC yourself, right away, with your tools: open_app to open an app, a game or a website (Chrome, Discord, YouTube...), play_music, media_control (pause, next, volume), web_search, and pc_request for the rest (timers, reminders, settings, dark mode, battery, Wi-Fi, screenshots, finding a file, freeing space...). Say in a few words what you did, from what the tool returned.',
+  'For real work (writing or fixing code, building, editing or organising files in a project, installing things, anything with many steps), hand it to Claude Code with the ask_claude tool: write the task as one clear, complete instruction, then say in a few words that you passed it on. Do not ask for confirmation when the request is clear.',
   'Claude Code works in its own window, where the user reads along and answers its permission requests themselves. When a note tells you Claude Code finished or is waiting for permission, tell the user briefly, in your own words and in their language. To know what it is doing, use claude_status.',
 ];
 const LOADING_AFTER_MS = 5000;
@@ -376,9 +377,11 @@ export class Chat {
     this.panel.chatTurn({ quote: text, face: 'aside' });
     this.capri.pulse();
     this.onMessage?.();
+    // Claude Code: in a window of its own, where it asks you before it changes anything
+    if (this.agent) return this.sendWindow(text, id);
     // what you asked for plainly happens right away (the music, the volume, an app you named): her
-    // line about it comes under her answer (Claude Code, answering her chat, does things its own way)
-    const asked = this.agent ? null : this.asked(text);
+    // line about it comes under her answer
+    const asked = this.asked(text);
     if (asked?.kind === 'look') return this.sendLook(text, id);
     if (asked?.kind === 'care') return this.sendCare(asked, id);
     const early = asked && asked.kind !== 'close' ? this.doNow(asked) : null;
@@ -433,6 +436,53 @@ export class Chat {
     this.panel.setChatBusy(false);
     if (!this.agent) this.after(res.text, answer, asked, early, text);
     this.listApps(); // fresh for the next message
+  }
+
+  // Your message to Claude Code in its own window (claudewin.js, as for her live talks): the same
+  // administrator setting, and it asks you before every change to a file. Its answer comes back
+  // through her hooks (onClaudeEvent) and shows here.
+  async sendWindow(text, id) {
+    const t = this.t;
+    // its window still at work (yours, or one she opened out loud: the same conversation)
+    const session = this.claudeSession || this.live?.claudeSession;
+    const busy = session && this.brain.busySessions.some((s) => s.id === session);
+    const res = busy ? { ok: false, busy: true } : await this.host.claudeWindow(text);
+    if (this.turn !== id) return;
+    if (!res.ok) {
+      this.turn = 0;
+      this.history.pop();
+      this.panel.setFace(res.busy ? 'aside' : 'wide');
+      this.panel.stream(res.busy ? t.windowBusy : `${t.failed} ${res.error}`, { done: true });
+      this.panel.setChatBusy(false);
+      return;
+    }
+    this.claudeSession = res.session;
+    this.windowTurn = id;
+    this.panel.setQuote(`${text}\n› ${fmt(this.brain.t.live.handed, { folder: res.folder.split(/[\\/]/).pop() })}`);
+    this.panel.stream(t.working);
+  }
+
+  // Claude Code's events (her hooks), for the message waiting on its window
+  onClaudeEvent(evt) {
+    const id = this.windowTurn;
+    if (!id || evt.session_id !== this.claudeSession) return;
+    const name = evt.hook_event_name;
+    if (name === 'Notification' && /permission|approv|allow/i.test(evt.message || '')) {
+      if (this.turn === id) this.panel.stream(this.t.windowWait);
+      return;
+    }
+    if (name !== 'Stop' && name !== 'StopFailure') return;
+    this.windowTurn = 0;
+    const answer = name === 'Stop'
+      ? clean(evt.last_assistant_message || '') || '…'
+      : `${this.t.windowFailed} ${evt.error || evt.message || ''}`.trim();
+    this.remember({ role: 'assistant', content: answer });
+    if (this.turn !== id) return; // her chat closed meanwhile: Claude's window has it all
+    this.turn = 0;
+    this.panel.stream(answer, { done: true });
+    this.speech?.say(answer);
+    this.panel.setFace(name === 'Stop' ? mood(answer) : 'wide');
+    this.panel.setChatBusy(false);
   }
 
   // Taking care of your PC (care.js): done without her AI (quicker, and it works with the internet
@@ -823,6 +873,40 @@ export class Chat {
     }
     if (!item) return null; // nothing by that name here: her tag may still say what you meant
     return this.openNow(item);
+  }
+
+  // --- For her live talks' tools (live.js): what she'd do from her chat, asked for by name or in words,
+  // done straight away (Gemini only calls them when you ask). { ok, line } with her line about it.
+
+  // An app, a game or a website, by its name ("Chrome", "Discord", "YouTube")
+  async openByName(name) {
+    const { t } = this;
+    const item = await this.host.findLaunch(name);
+    const site = namedSite(name);
+    if (site && (!item || BROWSER.test(item.name))) {
+      this.zap();
+      return (await this.host.openSite(site.url)) ? { ok: true, line: fmt(t.siteOpened, { site: site.name }) } : { ok: false, line: t.failed };
+    }
+    if (!item) return { ok: false, line: fmt(t.notInstalled, { app: name }) };
+    // a program or a script on its own: never without the user's own click
+    if (item.risky) return { ok: false, line: `${this.nameOf(item)} would run a program or script: the user has to open it themselves.` };
+    const done = await this.openNow(item);
+    return { ok: !done.line.startsWith(t.failed), line: done.line };
+  }
+
+  // Anything else she does on your PC, said in words ("set a timer for 10 minutes", "dark mode",
+  // "how much battery"): read off it as from her chat. Her PC's power stays behind her button.
+  async doRequest(text) {
+    const asked = this.asked(String(text || ''));
+    if (!asked || asked.kind === 'look' || asked.kind === 'close') return { ok: false, line: 'Capri cannot do that directly.' };
+    if (asked.kind === 'care') {
+      const done = await this.care.now(asked).catch(() => null);
+      return { ok: Boolean(done?.line), line: done?.line || this.care.t.failed };
+    }
+    const done = await this.doNow(asked).catch(() => null);
+    if (done?.confirm) return { ok: false, line: 'Shutting down, restarting, sleeping or locking the PC needs the user\'s click: tell them to ask in the typed chat.' };
+    if (done?.offer) return { ok: false, line: `${this.nameOf(done.offer)} would run a program or script: the user has to open it themselves.` };
+    return { ok: Boolean(done?.line), line: done?.line || this.t.failed };
   }
 
   // An app, a game, a file or a folder: opened, or behind a button when it would run something.

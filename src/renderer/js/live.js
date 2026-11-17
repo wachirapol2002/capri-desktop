@@ -26,6 +26,51 @@ const TOOLS = [
     description: 'What Claude Code is doing right now, and what it got done today.',
     parameters: { type: 'OBJECT', properties: {} },
   },
+  // what she does on your PC herself, as from her typed chat: quick things, no Claude Code needed
+  {
+    name: 'open_app',
+    description: 'Opens an app, a game or a website on the user\'s PC by its name (Chrome, Discord, Spotify, Steam, YouTube, a Windows folder like Downloads...). Use it whenever the user asks to open or launch something.',
+    parameters: {
+      type: 'OBJECT',
+      properties: { name: { type: 'STRING', description: 'The app, game or website name, as the user said it (in English if it has an English name).' } },
+      required: ['name'],
+    },
+  },
+  {
+    name: 'play_music',
+    description: 'Plays a song, an artist or a playlist: on Spotify (the app or its website), or the video itself on YouTube.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        query: { type: 'STRING', description: 'What to play: song, artist or playlist.' },
+        where: { type: 'STRING', enum: ['spotify', 'youtube'], description: 'Where to play it. YouTube unless the user names Spotify.' },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'media_control',
+    description: 'Controls the music or video playing on the PC (the media keys).',
+    parameters: {
+      type: 'OBJECT',
+      properties: { action: { type: 'STRING', enum: ['pause', 'play', 'next', 'previous', 'volup', 'voldown', 'mute'] } },
+      required: ['action'],
+    },
+  },
+  {
+    name: 'web_search',
+    description: 'Searches Google in the user\'s browser.',
+    parameters: { type: 'OBJECT', properties: { query: { type: 'STRING' } }, required: ['query'] },
+  },
+  {
+    name: 'pc_request',
+    description: 'Anything else Capri can do on the PC, said in words: set a timer or a reminder, a settings page, dark or light mode, the battery, disk space or RAM, sound volume to a level, Wi-Fi or Bluetooth on/off, screen brightness, a screenshot, find a file, free up space, what slows the PC, startup apps, app updates, game mode, tidy the windows, internet problems. Not shutting down or restarting.',
+    parameters: {
+      type: 'OBJECT',
+      properties: { request: { type: 'STRING', description: 'The request as a short plain sentence, in the user\'s language (e.g. "ตั้งเวลา 10 นาที", "dark mode", "how much battery is left").' } },
+      required: ['request'],
+    },
+  },
 ];
 
 export class Live {
@@ -301,11 +346,17 @@ export class Live {
 
   async tool({ name, args }) {
     if (name === 'claude_status') return { status: this.brain.context() };
+    const pc = await this.pcTool(name, args);
+    if (pc) {
+      if (pc.line) this.ui((p) => p.setQuote(pc.line)); // what she did, under what you said
+      return pc;
+    }
     if (name !== 'ask_claude') return { error: 'unknown tool' };
     const task = String(args.task || '').trim();
     if (!task) return { error: 'no task' };
     // still at the last one: it finishes first (you can see it in its window)
-    if (this.claudeSession && this.brain.busySessions.some((s) => s.id === this.claudeSession)) {
+    const session = this.claudeSession || this.chat.claudeSession; // the same conversation as her typed chat's
+    if (session && this.brain.busySessions.some((s) => s.id === session)) {
       return { status: 'busy', note: 'Claude Code is still working on the previous task. Tell the user to wait for it, or to type in its window.' };
     }
     const res = await this.host.claudeWindow(task);
@@ -313,6 +364,42 @@ export class Live {
     this.claudeSession = res.session;
     this.ui((p) => p.setQuote(fmt(this.t.handed, { folder: res.folder.split(/[\\/]/).pop() })));
     return { status: 'started', folder: res.folder, note: 'Claude Code is working on it in its own window. You will get a note when it finishes or needs permission.' };
+  }
+
+  // Her own tools on your PC (chat.js does them, as from her typed chat): { ok, line }, or null when
+  // `name` isn't one of them
+  async pcTool(name, args) {
+    const { chat, host } = this;
+    const say = (ok, line) => ({ ok: Boolean(ok), line: line || '' });
+    switch (name) {
+      case 'open_app':
+        return chat.openByName(String(args.name || '').trim());
+      case 'play_music': {
+        const query = String(args.query || '').trim();
+        if (!query) return say(false, 'no query');
+        if (args.where === 'spotify') {
+          chat.zap();
+          return say(await host.music(query), fmt(chat.t.music, { song: query }));
+        }
+        const done = await chat.youtube(query);
+        return say(done, done?.line);
+      }
+      case 'media_control': {
+        const action = String(args.action || '');
+        if (!chat.t.media[action]) return say(false, 'unknown action');
+        this.capri.pulse();
+        return say(await host.media(action), chat.t.media[action]);
+      }
+      case 'web_search': {
+        const query = String(args.query || '').trim();
+        chat.zap();
+        return say(query && (await host.webSearch(query)), fmt(chat.t.web, { query }));
+      }
+      case 'pc_request':
+        return chat.doRequest(args.request);
+      default:
+        return null;
+    }
   }
 
   // Claude Code's events (her hooks): the one she handed work to, finishing or waiting on you

@@ -555,6 +555,7 @@ async function boot() {
   host.onClaudeEvent((evt) => {
     brain.handle(evt);
     live.onClaudeEvent(evt); // the work she handed over out loud: done, or waiting on you
+    chat.onClaudeEvent(evt); // and what you typed to Claude Code: its answer in her chat
   });
   host.onWindows((data) => {
     capri.setWindows(data);

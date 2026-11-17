@@ -84,6 +84,7 @@ export const LINES = {
       loading: 'Le modèle se réveille… la première réponse prend un moment.',
       tiny: 'Je tourne sur {model} : il est tout petit, je risque de dire n’importe quoi. On en prend un plus gros ?', better: 'Un meilleur modèle',
       working: 'Je m’en occupe… (Claude Code bosse)',
+      windowBusy: 'Claude Code est encore sur la tâche d’avant, dans sa fenêtre. Attends qu’il finisse, ou écris-lui là-bas.', windowWait: 'Claude Code attend ta permission dans sa fenêtre.', windowFailed: 'Claude Code s’est arrêté :',
       // fermer une appli que tu lui demandes de fermer, après ton clic
       closeIt: 'Fermer {app}', no: 'Non',
       closed: '{app} : flatliné. C’est fait.',
@@ -557,6 +558,7 @@ export const LINES = {
       loading: 'Waking the model up… the first answer takes a moment.',
       tiny: 'I’m running on {model}: it’s tiny, I might talk nonsense. Want a bigger one?', better: 'A better model',
       working: 'On it… (Claude Code is working)',
+      windowBusy: 'Claude Code is still on the last task, in its window. Wait for it to finish, or type to it there.', windowWait: 'Claude Code is waiting for your permission in its window.', windowFailed: 'Claude Code stopped:',
       // closing an app you ask her to close, after your click
       closeIt: 'Close {app}', no: 'No',
       closed: '{app}: flatlined. Done.',
@@ -1025,6 +1027,7 @@ export const LINES = {
       loading: 'Despertando el modelo… la primera respuesta tarda un poco.',
       tiny: 'Funciono con {model}: es muy pequeño, puedo decir tonterías. ¿Cogemos uno más grande?', better: 'Un modelo mejor',
       working: 'En ello… (Claude Code está trabajando)',
+      windowBusy: 'Claude Code sigue con la tarea anterior, en su ventana. Espera a que termine, o escríbele allí.', windowWait: 'Claude Code espera tu permiso en su ventana.', windowFailed: 'Claude Code se detuvo:',
       // cerrar una app que le pides cerrar, tras tu clic
       closeIt: 'Cerrar {app}', no: 'No',
       closed: '{app}: flatline. Hecho.',
@@ -1492,6 +1495,7 @@ export const LINES = {
       loading: 'Acordando o modelo… a primeira resposta demora um pouco.',
       tiny: 'Tô rodando no {model}: ele é bem pequeno, posso falar besteira. Pega um maior?', better: 'Um modelo melhor',
       working: 'Tô nessa… (o Claude Code está trabalhando)',
+      windowBusy: 'O Claude Code ainda está na tarefa anterior, na janela dele. Espera ele terminar, ou escreve pra ele lá.', windowWait: 'O Claude Code está esperando sua permissão na janela dele.', windowFailed: 'O Claude Code parou:',
       // fechar um app que você pede para fechar, depois do seu clique
       closeIt: 'Fechar {app}', no: 'Não',
       closed: '{app}: flatline. Feito.',
@@ -1959,6 +1963,7 @@ export const LINES = {
       loading: 'Модель просыпается… первый ответ займёт немного времени.',
       tiny: 'Я работаю на {model}: она совсем маленькая, могу нести чушь. Возьмём побольше?', better: 'Модель получше',
       working: 'Уже занимаюсь… (Claude Code работает)',
+      windowBusy: 'Claude Code ещё занят прошлой задачей в своём окне. Подожди, пока он закончит, или напиши ему там.', windowWait: 'Claude Code ждёт твоего разрешения в своём окне.', windowFailed: 'Claude Code остановился:',
       // закрыть приложение, которое ты просишь закрыть, после твоего клика
       closeIt: 'Закрыть {app}', no: 'Нет',
       closed: '{app}: флэтлайн. Готово.',
